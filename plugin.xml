@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin xmlns="http://www.phonegap.com/ns/plugins/1.0"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    id="net.yoik.cordova.plugins.ibeacon"
+    version="1.0.0">
+
+    <name>YoikIBeacon</name>
+    <description>Yoik iBeacon Plugin</description>
+    <license>MIT</license>
+
+    <engines>
+        <engine name="cordova" version=">=3.0.0" />
+    </engines>    
+
+    <js-module src="www/iBeacon.js" name="iBeacon">
+        <clobbers target="cordova.plugins.iBeacon" />
+    </js-module>
+
+	<platform name="ios">
+        <config-file target="config.xml" parent="/*">
+            <feature name="YoikIBeacon">
+                <param name="ios-package" value="YoikIBeacon" />
+                <param name="onload" value="true" />
+            </feature>
+        </config-file>
+        <header-file src="src/ios/YoikIBeacon.h" />
+        <source-file src="src/ios/YoikIBeacon.m" />
+
+        <framework src="CoreLocation.framework" />
+
+<!--         <framework src="AudioToolbox.framework" /> -->
+    </platform>
+
+</plugin>
