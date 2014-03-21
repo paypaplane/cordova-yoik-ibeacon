@@ -72,6 +72,8 @@ SOFTWARE.
         // __highAccuracyEnabled = NO;
         self.beaconData = nil;
         
+        self.lastImmediate = [[NSDate alloc] init];
+        
         self.beaconDict = [[NSMutableDictionary alloc] init];
     }
     return self;
@@ -95,17 +97,13 @@ SOFTWARE.
 {
     NSString* callbackId = command.callbackId;
     NSArray* arguments = command.arguments;
-    NSString* uuid = [arguments objectAtIndex:0];
-    NSString* identifier = [arguments objectAtIndex:1];
+    NSUUID *uuid = [[NSUUID alloc] initWithUUIDString:[arguments objectAtIndex:1]];
+    NSString* identifier = [arguments objectAtIndex:0];
     
     CLBeaconRegion *myRegion = [[CLBeaconRegion alloc] initWithProximityUUID:uuid identifier:identifier];
     
-    NSMutableDictionary *item = [[NSMutableDictionary alloc] init];
-    [item setObject:myRegion forKey: identifier];
-    [self.beaconDict setObject:item forKey:identifier];
-    
+    [self.beaconDict setObject:myRegion forKey:identifier];
     [self.locationManager startMonitoringForRegion: myRegion];
-    
 }
 
 
@@ -115,14 +113,13 @@ SOFTWARE.
 - (void)locationManager:(CLLocationManager*)manager didEnterRegion:(CLRegion*)region
 {
     NSLog(@"Entered region..%@", region.identifier);
-//    [self.locationManager startRangingBeaconsInRegion: self.myBeaconRegion];
-    
+    [self.locationManager startRangingBeaconsInRegion: self.beaconDict[region.identifier]];
 }
 
 -(void)locationManager:(CLLocationManager*)manager didExitRegion:(CLRegion*)region
 {
-//    [self.locationManager stopRangingBeaconsInRegion:self.myBeaconRegion];
-    NSLog(@"NOOOOO");
+    NSLog(@"Exited region..%@", region.identifier);
+    [self.locationManager stopRangingBeaconsInRegion: self.beaconDict[region.identifier]];
 }
 
 -(void)locationManager:(CLLocationManager*)manager
@@ -132,12 +129,14 @@ SOFTWARE.
     
     // Beacon found!
     if (beacons.count > 0) {
+       
         CLBeacon *foundBeacon = [beacons firstObject];
         
         if (foundBeacon.proximity == CLProximityUnknown) {
             //        self.distanceLabel.text = @"Unknown";
         } else if (foundBeacon.proximity == CLProximityImmediate) {
             
+           
             NSTimeInterval secs = [self.lastImmediate timeIntervalSinceNow];
             
             if (secs < -6) {
@@ -156,8 +155,6 @@ SOFTWARE.
                 
                 NSMutableDictionary *result = [[NSMutableDictionary alloc] init];
                 [result setObject:inner forKey:@"ibeacon"];
-                
-                NSLog(@"I'm very close!");
 
                 self.lastImmediate = [[NSDate alloc] init];
                 
@@ -176,53 +173,14 @@ SOFTWARE.
     
 }
 
-- (void)locationManager:(CLLocationManager *)manager didStartMonitoringForRegion:(CLRegion *)region {
-    
+- (void)locationManager:(CLLocationManager *)manager didStartMonitoringForRegion:(CLRegion *)region
+{
     NSLog(@"hello %@", region.identifier);
-    
-//    [self.locationManager startRangingBeaconsInRegion: self.myBeaconRegion];
-    
+    [self.locationManager startRangingBeaconsInRegion: self.beaconDict[region.identifier]];
 }
 
 
 /*
-
-- (void)locationManager:(CLLocationManager*)manager
-       didUpdateHeading:(CLHeading*)heading
-{
-    CDVHeadingData* hData = self.headingData;
-
-    // normally we would clear the delegate to stop getting these notifications, but
-    // we are sharing a CLLocationManager to get location data as well, so we do a nil check here
-    // ideally heading and location should use their own CLLocationManager instances
-    if (hData == nil) {
-        return;
-    }
-
-    // save the data for next call into getHeadingData
-    hData.headingInfo = heading;
-    BOOL bTimeout = NO;
-    if (!hData.headingFilter && hData.headingTimestamp) {
-        bTimeout = fabs([hData.headingTimestamp timeIntervalSinceNow]) > hData.timeout;
-    }
-
-    if (hData.headingStatus == HEADINGSTARTING) {
-        hData.headingStatus = HEADINGRUNNING; // so returnHeading info will work
-
-        // this is the first update
-        for (NSString* callbackId in hData.headingCallbacks) {
-            [self returnHeadingInfo:callbackId keepCallback:NO];
-        }
-
-        [hData.headingCallbacks removeAllObjects];
-    }
-    if (hData.headingFilter) {
-        [self returnHeadingInfo:hData.headingFilter keepCallback:YES];
-    } else if (bTimeout) {
-        [self stopHeading:nil];
-    }
-    hData.headingStatus = HEADINGRUNNING;  // to clear any error
-}
 
 - (void)locationManager:(CLLocationManager*)manager didFailWithError:(NSError*)error
 {
@@ -252,16 +210,18 @@ SOFTWARE.
     [self.locationManager stopUpdatingLocation];
     __locationStarted = NO;
 }
+*/
 
 - (void)dealloc
 {
     self.locationManager.delegate = nil;
+    self.beaconDict = nil;
 }
 
 - (void)onReset
 {
-    [self.locationManager stopUpdatingHeading];
-    self.headingData = nil;
+//    [self.locationManager stopUpdatingHeading];
+    self.beaconDict = nil;
 }
-*/
+
 @end

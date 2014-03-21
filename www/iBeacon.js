@@ -21,7 +21,15 @@
 
 var argscheck = require('cordova/argscheck'),
     exec = require('cordova/exec'),
-    Constants = require('./iBeaconConstants');
+    Constants = {
+      Proximity:{
+        IMMEDIATE: 0,
+        NEAR: 1,
+        FAR: 2,
+        UNKNOWN: 2
+      }
+    };
+    // Constants = require('./iBeaconConstants');
     // XXX: commented out
     //CameraPopoverHandle = require('./CameraPopoverHandle');
 
@@ -38,11 +46,11 @@ iBeaconExports.addRegion = function(successCallback, errorCallback, options) {
     var getValue = argscheck.getValue;
 
     var identifier = getValue(options.identifier, 'defaultRegion');
-    var uuid = getValue(options.destinationType, '');
+    var uuid = getValue(options.uuid, '');
 
     var args = [identifier, uuid];
 
-    exec(successCallback, errorCallback, "iBeacon", "addRegion", args);
+    exec(successCallback, errorCallback, "YoikIBeacon", "addRegion", args);
 };
 
 

@@ -1,2 +1,2 @@
-cordova-ibeacon
+cordova-yoik-ibeacon
 ===============

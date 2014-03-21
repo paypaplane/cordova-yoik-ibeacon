@@ -56,16 +56,5 @@ SOFTWARE.
 - (void)locationManager:(CLLocationManager*)manager
        didFailWithError:(NSError*)error;
 
-//- (void)getHeading:(CDVInvokedUrlCommand*)command;
-//- (void)returnHeadingInfo:(NSString*)callbackId keepCallback:(BOOL)bRetain;
-//- (void)watchHeadingFilter:(CDVInvokedUrlCommand*)command;
-//- (void)stopHeading:(CDVInvokedUrlCommand*)command;
-//- (void)startHeadingWithFilter:(CLLocationDegrees)filter;
-- (void)locationManager:(CLLocationManager*)manager
-       didUpdateHeading:(CLHeading*)heading;
-
-- (BOOL)locationManagerShouldDisplayHeadingCalibration:(CLLocationManager*)manager;
-
-
 
 @end
