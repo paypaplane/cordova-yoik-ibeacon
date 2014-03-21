@@ -49,7 +49,7 @@ SOFTWARE.
 
 @property (strong) YoikIBeaconData* beaconData;
 
-- (BOOL)hasIBeaconSupport;
+//- (BOOL)hasIBeaconSupport;
 
 - (void)addRegion:(CDVInvokedUrlCommand*)command;
 

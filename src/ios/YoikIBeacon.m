@@ -96,14 +96,27 @@ SOFTWARE.
 - (void)addRegion:(CDVInvokedUrlCommand*)command
 {
     NSString* callbackId = command.callbackId;
-    NSArray* arguments = command.arguments;
-    NSUUID *uuid = [[NSUUID alloc] initWithUUIDString:[arguments objectAtIndex:1]];
-    NSString* identifier = [arguments objectAtIndex:0];
     
-    CLBeaconRegion *myRegion = [[CLBeaconRegion alloc] initWithProximityUUID:uuid identifier:identifier];
-    
-    [self.beaconDict setObject:myRegion forKey:identifier];
-    [self.locationManager startMonitoringForRegion: myRegion];
+    @try {
+
+        NSArray* arguments = command.arguments;
+        NSUUID *uuid = [[NSUUID alloc] initWithUUIDString:[arguments objectAtIndex:1]];
+        NSString* identifier = [arguments objectAtIndex:0];
+        
+       
+        CLBeaconRegion *myRegion = [[CLBeaconRegion alloc] initWithProximityUUID:uuid identifier:identifier];
+        
+        [self.beaconDict setObject:myRegion forKey:identifier];
+        [self.locationManager startMonitoringForRegion: myRegion];
+        
+        CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+        [self.commandDelegate sendPluginResult:result callbackId:callbackId];
+        
+    }
+    @catch (NSException * e) {
+        CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR];
+        [self.commandDelegate sendPluginResult:result callbackId:callbackId];
+    }
 }
 
 
@@ -114,12 +127,19 @@ SOFTWARE.
 {
     NSLog(@"Entered region..%@", region.identifier);
     [self.locationManager startRangingBeaconsInRegion: self.beaconDict[region.identifier]];
+    
+    
+    NSString *jsStatement = [NSString stringWithFormat:@"cordova.fireDocumentEvent('ibeaconEnter', '%@');", region.identifier];
+    [self.commandDelegate evalJs:jsStatement];
 }
 
 -(void)locationManager:(CLLocationManager*)manager didExitRegion:(CLRegion*)region
 {
     NSLog(@"Exited region..%@", region.identifier);
     [self.locationManager stopRangingBeaconsInRegion: self.beaconDict[region.identifier]];
+    
+    NSString *jsStatement = [NSString stringWithFormat:@"cordova.fireDocumentEvent('ibeaconExit', '%@');", region.identifier];
+    [self.commandDelegate evalJs:jsStatement];
 }
 
 -(void)locationManager:(CLLocationManager*)manager
