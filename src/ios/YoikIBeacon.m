@@ -172,6 +172,7 @@ SOFTWARE.
                 [inner setObject:major forKey:@"major"];
                 [inner setObject:minor forKey:@"minor"];
                 [inner setObject:@"immediate" forKey:@"range"];
+                [inner setObject:region.identifier forKey:@"identifier"];
                 
                 NSMutableDictionary *result = [[NSMutableDictionary alloc] init];
                 [result setObject:inner forKey:@"ibeacon"];
