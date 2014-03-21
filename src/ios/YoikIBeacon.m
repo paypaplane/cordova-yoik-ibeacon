@@ -23,6 +23,7 @@ SOFTWARE.
  */
 
 #import "YoikIBeacon.h"
+#import <Cordova/CDVJSON.h>
 
 
 #pragma mark Constants
@@ -63,7 +64,7 @@ SOFTWARE.
 
 - (CDVPlugin*)initWithWebView:(UIWebView*)theWebView
 {
-    self = (CDVCompass*)[super initWithWebView:(UIWebView*)theWebView];
+//    self = (CDVCompass*)[super initWithWebView:(UIWebView*)theWebView];
     if (self) {
         self.locationManager = [[CLLocationManager alloc] init];
         self.locationManager.delegate = self; // Tells the location manager to send updates to this object
@@ -95,7 +96,7 @@ SOFTWARE.
     NSString* callbackId = command.callbackId;
     NSArray* arguments = command.arguments;
     NSString* uuid = [arguments objectAtIndex:0];
-    NSString* identifier = [arguments objectAtIndex:`];
+    NSString* identifier = [arguments objectAtIndex:1];
     
     CLBeaconRegion *myRegion = [[CLBeaconRegion alloc] initWithProximityUUID:uuid identifier:identifier];
     
@@ -114,13 +115,13 @@ SOFTWARE.
 - (void)locationManager:(CLLocationManager*)manager didEnterRegion:(CLRegion*)region
 {
     NSLog(@"Entered region..%@", region.identifier);
-    [self.locationManager startRangingBeaconsInRegion: self.myBeaconRegion];
+//    [self.locationManager startRangingBeaconsInRegion: self.myBeaconRegion];
     
 }
 
 -(void)locationManager:(CLLocationManager*)manager didExitRegion:(CLRegion*)region
 {
-    [self.locationManager stopRangingBeaconsInRegion:self.myBeaconRegion];
+//    [self.locationManager stopRangingBeaconsInRegion:self.myBeaconRegion];
     NSLog(@"NOOOOO");
 }
 
@@ -179,7 +180,7 @@ SOFTWARE.
     
     NSLog(@"hello %@", region.identifier);
     
-    [self.locationManager startRangingBeaconsInRegion: self.myBeaconRegion];
+//    [self.locationManager startRangingBeaconsInRegion: self.myBeaconRegion];
     
 }
 
