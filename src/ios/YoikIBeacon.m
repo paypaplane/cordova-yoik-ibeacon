@@ -128,8 +128,13 @@ SOFTWARE.
     NSLog(@"Entered region..%@", region.identifier);
     [self.locationManager startRangingBeaconsInRegion: self.beaconDict[region.identifier]];
     
+    NSMutableDictionary *inner = [[NSMutableDictionary alloc] init];
+    [inner setObject:region.identifier forKey:@"identifier"];
+    NSMutableDictionary *result = [[NSMutableDictionary alloc] init];
+    [result setObject:inner forKey:@"ibeacon"];
     
-    NSString *jsStatement = [NSString stringWithFormat:@"cordova.fireDocumentEvent('ibeaconEnter', '%@');", region.identifier];
+    
+    NSString *jsStatement = [NSString stringWithFormat:@"cordova.fireDocumentEvent('ibeaconEnter', %@);", [result JSONString]];
     [self.commandDelegate evalJs:jsStatement];
 }
 
@@ -138,7 +143,12 @@ SOFTWARE.
     NSLog(@"Exited region..%@", region.identifier);
     [self.locationManager stopRangingBeaconsInRegion: self.beaconDict[region.identifier]];
     
-    NSString *jsStatement = [NSString stringWithFormat:@"cordova.fireDocumentEvent('ibeaconExit', '%@');", region.identifier];
+    NSMutableDictionary *inner = [[NSMutableDictionary alloc] init];
+    [inner setObject:region.identifier forKey:@"identifier"];
+    NSMutableDictionary *result = [[NSMutableDictionary alloc] init];
+    [result setObject:inner forKey:@"ibeacon"];
+    
+    NSString *jsStatement = [NSString stringWithFormat:@"cordova.fireDocumentEvent('ibeaconExit', %@);", [result JSONString]];
     [self.commandDelegate evalJs:jsStatement];
 }
 
