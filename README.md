@@ -4,12 +4,17 @@ cordova-yoik-ibeacon
 A very incomplete, not entirely bug free iBeacon plugin.
 
 # Watch a region/UUID
-    cordova.plugins.iBeacon.addRegion(function() {
-        console.log('added successfully') ;
+    cordova.plugins.iBeacon.addRegion(
+        // Success Callback
+        function() {
+            console.log('added successfully') ;
         }, 
+        // Error Callback
         function() { 
             console.log('oh no! error');
-        }, { 
+        }, 
+        // Params
+        { 
             identifier: 'com.mydomain.ibeacon.myregion', 
             uuid: 'MY-UUID'
         }
@@ -23,9 +28,10 @@ Called when in immediate proximity
     {
         // event data
         ibeacon: {
-            uuid: '',
+            uuid: 'MY-UUID',
             major: 1,
             minor: 1,
+            range: 'immediate',
             identifier: 'com.mydomain.ibeacon.myregion'
         }
     }
