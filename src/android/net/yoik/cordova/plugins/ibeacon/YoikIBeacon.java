@@ -1,23 +1,32 @@
 package net.yoik.cordova.plugins.ibeacon;
 
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.Context;
 import android.util.Log;
+import android.os.RemoteException;
+import android.content.ServiceConnection;
 
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.PluginResult;
+
+import com.radiusnetworks.ibeacon.IBeaconConsumer;
+import com.radiusnetworks.ibeacon.IBeaconManager;
+import com.radiusnetworks.ibeacon.MonitorNotifier;
+import com.radiusnetworks.ibeacon.Region;
 
 /**
  * This calls out to the ZXing barcode reader and returns the result.
  *
  * @sa https://github.com/apache/cordova-android/blob/master/framework/src/org/apache/cordova/CordovaPlugin.java
  */
-public class YoikIBeacon extends CordovaPlugin {
+public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer {
     public static final int REQUEST_CODE = 0x0ba7c0de;
 
     // private static final String SCAN = "scan";
@@ -130,6 +139,77 @@ public class YoikIBeacon extends CordovaPlugin {
     //         }
     //     }
     // }
+
+    private IBeaconManager iBeaconManager = IBeaconManager.getInstanceForApplication(cordova.getActivity());
+
+    private void init(CallbackContext callbackContext) {
+        Log.d("GRANT", "Enabling plugin");
+
+        // startNfc();
+        // if (!recycledIntent()) {
+        //     parseMessage();
+        // }
+        callbackContext.success();
+    }
+
+    // @Override 
+    // public void onDestroy(boolean multitasking) {
+    //     // super.onDestroy(multitasking);
+    //     iBeaconManager.unBind(this);
+    // }
+    @Override 
+    public void onPause(boolean multitasking) {
+        super.onPause(multitasking);
+        if (iBeaconManager.isBound(this)) iBeaconManager.setBackgroundMode(this, true);
+    }
+    @Override 
+    public void onResume(boolean multitasking) {
+        super.onResume(multitasking);
+        if (iBeaconManager.isBound(this)) iBeaconManager.setBackgroundMode(this, false);
+    }
+
+    public Context getApplicationContext() {
+        return cordova.getActivity().getApplicationContext();
+    }
+
+    public void unbindService(ServiceConnection connection) {
+        cordova.getActivity().unbindService(connection);
+    }
+
+    public boolean bindService(Intent intent, ServiceConnection connection, int mode) {
+        Log.d("GRANT", "HERE!");
+        return cordova.getActivity().bindService(intent, connection, mode);
+    }
+
+    @Override
+    public void onIBeaconServiceConnect() {
+        iBeaconManager.setMonitorNotifier(new MonitorNotifier() {
+        @Override
+        public void didEnterRegion(Region region) {
+          // logToDisplay("I just saw an iBeacon for the first time!");       
+            Log.d("GRANT", "I just saw an iBeacon for the first time!");
+        }
+
+        @Override
+        public void didExitRegion(Region region) {
+            // logToDisplay("I no longer see an iBeacon");
+            Log.d("GRANT", "I no longer see an iBeacon");
+        }
+
+        @Override
+        public void didDetermineStateForRegion(int state, Region region) {
+            // logToDisplay("I have just switched from seeing/not seeing iBeacons: "+state);
+            Log.d("GRANT", "I have just switched from seeing/not seeing iBeacons: "+state);
+        }
+
+
+        });
+
+        try {
+            Log.d("GRANT", "START IT!");
+            iBeaconManager.startMonitoringBeaconsInRegion(new Region("2F234454-CF6D-4A0F-ADF2-F4911BA9FFA6", null, null, null));
+        } catch (RemoteException e) {   }
+    }
 
     
 }

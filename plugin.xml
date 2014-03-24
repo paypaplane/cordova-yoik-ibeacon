@@ -38,6 +38,7 @@
         <config-file target="res/xml/config.xml" parent="/*">
             <feature name="YoikIBeacon">
                 <param name="android-package" value="net.yoik.cordova.plugins.ibeacon.YoikIBeacon" />
+                <param name="onload" value="true" />
             </feature>
         </config-file>
 
@@ -46,6 +47,24 @@
         <config-file target="AndroidManifest.xml" parent="/manifest">
             <uses-permission android:name="android.permission.BLUETOOTH"/>
             <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
+        </config-file>
+
+        <config-file target="AndroidManifest.xml" parent="/manifest/application">
+            <service android:enabled="true"
+                android:exported="true"
+                android:isolatedProcess="false"
+                android:label="iBeacon"
+                android:name="com.radiusnetworks.ibeacon.service.IBeaconService">
+            </service>    
+            <service android:enabled="true" 
+                android:name="com.radiusnetworks.ibeacon.IBeaconIntentProcessor">
+                    <meta-data android:name="background" android:value="true" />
+                <intent-filter 
+                   android:priority="1" >
+                    <action android:name="$PACKAGE_NAME.DID_RANGING" />
+                    <action android:name="$PACKAGE_NAME.DID_MONITORING" />
+                </intent-filter>
+            </service>
         </config-file>
 
     </platform>
