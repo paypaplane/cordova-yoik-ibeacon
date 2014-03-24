@@ -31,4 +31,23 @@
 <!--         <framework src="AudioToolbox.framework" /> -->
     </platform>
 
+    <platform name="android">
+
+        <source-file src="src/android/net/yoik/cordova/plugins/ibeacon/YoikIBeacon.java" target-dir="src/net/yoik/cordova/plugins/ibeacon/" />
+
+        <config-file target="res/xml/config.xml" parent="/*">
+            <feature name="YoikIBeacon">
+                <param name="android-package" value="net.yoik.cordova.plugins.ibeacon.YoikIBeacon" />
+            </feature>
+        </config-file>
+
+        <source-file src="src/android/android-ibeacon-library.jar" target-dir="libs"/>
+
+        <config-file target="AndroidManifest.xml" parent="/manifest">
+            <uses-permission android:name="android.permission.BLUETOOTH"/>
+            <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
+        </config-file>
+
+    </platform>
+
 </plugin>
