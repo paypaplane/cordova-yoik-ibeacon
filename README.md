@@ -21,6 +21,7 @@ A very incomplete, not entirely bug free iBeacon plugin.
     );
 
 # Events
+All events are called on the document object.
 
 ## ibeacon
 Called when in immediate proximity

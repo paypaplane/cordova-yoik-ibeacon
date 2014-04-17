@@ -11,6 +11,7 @@ import android.content.Context;
 import android.util.Log;
 import android.os.RemoteException;
 import android.content.ServiceConnection;
+import android.text.format.Time;
 
 import java.util.Collection;
 
@@ -40,11 +41,11 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, Monit
 
     private static final String TAG = "YoikIBeacon";    
 
+    private static final String ACTION_ADDREGION = "addRegion";
+
     private IBeaconManager iBeaconManager;
 
-    // private static final String SCAN = "scan";
-
-    // private static final String LOG_TAG = "BarcodeScanner";
+    private Time lastImmediate;
 
     private CallbackContext callbackContext;
 
@@ -54,16 +55,21 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, Monit
         // your init code here
         Log.d(TAG, "starting");
 
-        iBeaconManager = IBeaconManager.getInstanceForApplication(cordova.getActivity());
-        iBeaconManager.bind(this);
-        Log.d(TAG, "starting after");
-    }
+        final Activity activity = cordova.getActivity();
+        final YoikIBeacon that = this;
 
-    /**
-     * Constructor.
-     */
-    // public YoikIBeacon() {
-    // }
+        this.lastImmediate = new Time();
+        this.lastImmediate.setToNow();
+
+        cordova.getThreadPool().execute(new Runnable() {
+            @Override
+            public void run() {
+                
+                iBeaconManager = IBeaconManager.getInstanceForApplication(activity);
+                iBeaconManager.bind(that);
+            }
+        });
+    }
 
     /**
      * Executes the request.
@@ -75,104 +81,53 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, Monit
      *     cordova.getActivity().runOnUiThread(runnable);
      *
      * @param action          The action to execute.
-     * @param args            The exec() arguments.
+     * @param data            The exec() arguments.
      * @param callbackContext The callback context used when calling back into JavaScript.
      * @return                Whether the action was valid.
      *
      * @sa https://github.com/apache/cordova-android/blob/master/framework/src/org/apache/cordova/CordovaPlugin.java
      */
     @Override
-    public boolean execute(String action, JSONArray args, CallbackContext callbackContext) {
+    public boolean execute(String action, JSONArray data, CallbackContext callbackContext) {
         this.callbackContext = callbackContext;
 
-        if (action.equals("asdf")) {
-            JSONObject obj = args.optJSONObject(0);
-            if (obj != null) {
-                // String type = obj.optString(TYPE);
-                // String data = obj.optString(DATA);
+        Log.d(TAG, "execute " + action);
 
-                // // If the type is null then force the type to text
-                // if (type == null) {
-                //     type = TEXT_TYPE;
-                // }
-
-                // if (data == null) {
-                //     callbackContext.error("User did not specify data to encode");
-                //     return true;
-                // }
-
-                // encode(type, data);
-            } else {
-                callbackContext.error("User did not specify data to encode");
-                return true;
-            }
-        } else if (action.equals("scan")) {
-            //scan();
+        if (action.equals(ACTION_ADDREGION)) {
+            addRegion(data, callbackContext);            
+        } else if (action.equals("anotheraction")) {
+            
         } else {
             return false;
         }
         return true;
     }
 
-    // /**
-    //  * Starts an intent to scan and decode a barcode.
-    //  */
-    // public void scan() {
-    //     Intent intentScan = new Intent(SCAN_INTENT);
-    //     intentScan.addCategory(Intent.CATEGORY_DEFAULT);
-
-    //     this.cordova.startActivityForResult((CordovaPlugin) this, intentScan, REQUEST_CODE);
-    // }
-
-    // /**
-    //  * Called when the barcode scanner intent completes.
-    //  *
-    //  * @param requestCode The request code originally supplied to startActivityForResult(),
-    //  *                       allowing you to identify who this result came from.
-    //  * @param resultCode  The integer result code returned by the child activity through its setResult().
-    //  * @param intent      An Intent, which can return result data to the caller (various data can be attached to Intent "extras").
-    //  */
-    // @Override
-    // public void onActivityResult(int requestCode, int resultCode, Intent intent) {
-    //     if (requestCode == REQUEST_CODE) {
-    //         if (resultCode == Activity.RESULT_OK) {
-    //             JSONObject obj = new JSONObject();
-    //             try {
-    //                 obj.put(TEXT, intent.getStringExtra("SCAN_RESULT"));
-    //                 obj.put(FORMAT, intent.getStringExtra("SCAN_RESULT_FORMAT"));
-    //                 obj.put(CANCELLED, false);
-    //             } catch (JSONException e) {
-    //                 Log.d(LOG_TAG, "This should never happen");
-    //             }
-    //             //this.success(new PluginResult(PluginResult.Status.OK, obj), this.callback);
-    //             this.callbackContext.success(obj);
-    //         } else if (resultCode == Activity.RESULT_CANCELED) {
-    //             JSONObject obj = new JSONObject();
-    //             try {
-    //                 obj.put(TEXT, "");
-    //                 obj.put(FORMAT, "");
-    //                 obj.put(CANCELLED, true);
-    //             } catch (JSONException e) {
-    //                 Log.d(LOG_TAG, "This should never happen");
-    //             }
-    //             //this.success(new PluginResult(PluginResult.Status.OK, obj), this.callback);
-    //             this.callbackContext.success(obj);
-    //         } else {
-    //             //this.error(new PluginResult(PluginResult.Status.ERROR), this.callback);
-    //             this.callbackContext.error("Unexpected error");
-    //         }
-    //     }
-    // }
-
+    private void addRegion(JSONArray data, CallbackContext callbackContext) {
    
+        Log.d(TAG, "START IT!");
+
+        final JSONArray data2 = data;
+        final CallbackContext callbackContext2 = callbackContext;
+
+        cordova.getThreadPool().execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    iBeaconManager.startMonitoringBeaconsInRegion(new Region(data2.optString(0), data2.optString(1), null, null));
+                    callbackContext2.success();
+
+                } catch (RemoteException e) {   
+                    callbackContext2.error("Could not add region");
+                }  
+            }
+        });
+            
+    }
 
     private void init(CallbackContext callbackContext) {
         Log.d(TAG, "Enabling plugin");
 
-        // startNfc();
-        // if (!recycledIntent()) {
-        //     parseMessage();
-        // }
         callbackContext.success();
     }
 
@@ -209,43 +164,41 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, Monit
 
     @Override
     public void onIBeaconServiceConnect() {
-        iBeaconManager.setMonitorNotifier(this);
-        // iBeaconManager.setMonitorNotifier(new MonitorNotifier() {
-        // @Override
-        // public void didEnterRegion(Region region) {
-        //   // logToDisplay("I just saw an iBeacon for the first time!");       
-        //     Log.d(TAG, "I just saw an iBeacon for the first time!");
-        // }
-
-        // @Override
-        // public void didExitRegion(Region region) {
-        //     // logToDisplay("I no longer see an iBeacon");
-        //     Log.d(TAG, "I no longer see an iBeacon");
-        // }
-
-        // @Override
-        // public void didDetermineStateForRegion(int state, Region region) {
-        //     // logToDisplay("I have just switched from seeing/not seeing iBeacons: "+state);
-        //     Log.d(TAG, "I have just switched from seeing/not seeing iBeacons: "+state);
-        // }
-
-
-        // });
-
-        try {
-            Log.d(TAG, "START IT!");
-            iBeaconManager.startMonitoringBeaconsInRegion(new Region("2F234454-CF6D-4A0F-ADF2-F4911BA9FFA6", null, null, null));
-        } catch (RemoteException e) {   }
+        iBeaconManager.setMonitorNotifier(this);        
+        
+        Log.d(TAG, "START IT - OLD!");
     }
 
     @Override
     public void didEnterRegion(Region region) {
-      // logToDisplay("I just saw an iBeacon for the first time!");       
+           
         Log.d(TAG, "I just saw an iBeacon for the first time!");
 
         try {
             iBeaconManager.startRangingBeaconsInRegion(region);
             iBeaconManager.setRangeNotifier(this);
+
+            JSONObject obj = new JSONObject();
+                
+            obj.put("identifier", region.getUniqueId());
+            
+            JSONObject result = new JSONObject();
+            result.put("ibeacon", obj);
+            
+            
+            final String jsStatement = String.format("cordova.fireDocumentEvent('ibeaconEnter', %s);", result.toString());
+
+            cordova.getActivity().runOnUiThread(
+                new Runnable() { 
+                    @Override
+                     public void run() {
+                         webView.loadUrl("javascript:" + jsStatement);
+                     }
+                }
+            );
+
+        } catch (JSONException e) {
+            e.printStackTrace();
         } catch (RemoteException e) {
             e.printStackTrace();
         }
@@ -253,8 +206,36 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, Monit
 
     @Override
     public void didExitRegion(Region region) {
-        // logToDisplay("I no longer see an iBeacon");
+        
         Log.d(TAG, "I no longer see an iBeacon");
+
+        try {
+            iBeaconManager.startRangingBeaconsInRegion(region);
+
+            JSONObject obj = new JSONObject();
+                
+            obj.put("identifier", region.getUniqueId());
+            
+            JSONObject result = new JSONObject();
+            result.put("ibeacon", obj);
+            
+            
+            final String jsStatement = String.format("cordova.fireDocumentEvent('ibeaconExit', %s);", result.toString());
+
+            cordova.getActivity().runOnUiThread(
+                new Runnable() { 
+                    @Override
+                     public void run() {
+                         webView.loadUrl("javascript:" + jsStatement);
+                     }
+                }
+            );
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -266,14 +247,45 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, Monit
 
     @Override
     public void didRangeBeaconsInRegion(Collection<IBeacon> iBeacons, Region region) {
-        for (IBeacon iBeacon: iBeacons) {
-            // iBeacon.requestData(this);
-            // String displayString = iBeacon.getProximityUuid()+" "+iBeacon.getMajor()+" "+iBeacon.getMinor()+"\n";
-            // displayTableRow(iBeacon, displayString, false);
-            if (iBeacon.getAccuracy() < 0.015) {       
-                Log.d(TAG, "Found One: "+iBeacon.getAccuracy() + " " + iBeacon.getProximityUuid()+" "+iBeacon.getMajor()+" "+iBeacon.getMinor());             
+        try {
+            for (IBeacon iBeacon: iBeacons) {
+                if (iBeacon.getAccuracy() < 0.015) {       
+                    Log.d(TAG, "Found One: "+iBeacon.getAccuracy() + " " + iBeacon.getProximityUuid()+" "+iBeacon.getMajor()+" "+iBeacon.getMinor());
+
+                    Time now = new Time();
+                    now.setToNow();
+
+                    if ((now.toMillis(false) - this.lastImmediate.toMillis(false)) > 6000) {
+
+                        JSONObject obj = new JSONObject();                
+                        obj.put("uuid", iBeacon.getProximityUuid());
+                        obj.put("major", iBeacon.getMajor());
+                        obj.put("minor", iBeacon.getMinor());
+                        obj.put("range", "immediate");
+                        obj.put("identifier", region.getUniqueId());
+
+                        JSONObject result = new JSONObject();
+                        result.put("ibeacon", obj);
+
+                        final String jsStatement = String.format("cordova.fireDocumentEvent('ibeacon', %s);", result.toString());
+
+                        cordova.getActivity().runOnUiThread(
+                            new Runnable() { 
+                                @Override
+                                 public void run() {
+                                     webView.loadUrl("javascript:" + jsStatement);
+                                 }
+                            }
+                        );
+
+                        this.lastImmediate.setToNow();
+                    }
+
+                }
             }
-        }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        } 
     }
 
     @Override
@@ -283,7 +295,7 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, Monit
         }
         if (iBeaconData != null) {
             String displayString = iBeacon.getProximityUuid()+" "+iBeacon.getMajor()+" "+iBeacon.getMinor()+"\n"+"Welcome message:"+iBeaconData.get("welcomeMessage");
-            //displayTableRow(iBeacon, displayString, true);
+            
         }
     }
     
