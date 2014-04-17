@@ -42,6 +42,7 @@
             </feature>
         </config-file>
 
+        <!-- <source-file src="src/android/AndroidIBeaconLibrary.jar" target-dir="libs"/> -->
         <source-file src="src/android/android-ibeacon-library.jar" target-dir="libs"/>
 
         <config-file target="AndroidManifest.xml" parent="/manifest">

@@ -12,22 +12,35 @@ import android.util.Log;
 import android.os.RemoteException;
 import android.content.ServiceConnection;
 
+import java.util.Collection;
+
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.PluginResult;
+import org.apache.cordova.CordovaInterface;
+import org.apache.cordova.CordovaWebView;
 
+import com.radiusnetworks.ibeacon.IBeacon;
+import com.radiusnetworks.ibeacon.IBeaconData;
 import com.radiusnetworks.ibeacon.IBeaconConsumer;
+import com.radiusnetworks.ibeacon.IBeaconDataNotifier;
 import com.radiusnetworks.ibeacon.IBeaconManager;
+import com.radiusnetworks.ibeacon.client.DataProviderException;
 import com.radiusnetworks.ibeacon.MonitorNotifier;
 import com.radiusnetworks.ibeacon.Region;
+import com.radiusnetworks.ibeacon.RangeNotifier;
 
 /**
  * This calls out to the ZXing barcode reader and returns the result.
  *
  * @sa https://github.com/apache/cordova-android/blob/master/framework/src/org/apache/cordova/CordovaPlugin.java
  */
-public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer {
+public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, MonitorNotifier, RangeNotifier, IBeaconDataNotifier {
     public static final int REQUEST_CODE = 0x0ba7c0de;
+
+    private static final String TAG = "YoikIBeacon";    
+
+    private IBeaconManager iBeaconManager;
 
     // private static final String SCAN = "scan";
 
@@ -35,11 +48,22 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer {
 
     private CallbackContext callbackContext;
 
+    @Override
+    public void initialize(CordovaInterface cordova, CordovaWebView webView) {
+        super.initialize(cordova, webView);
+        // your init code here
+        Log.d(TAG, "starting");
+
+        iBeaconManager = IBeaconManager.getInstanceForApplication(cordova.getActivity());
+        iBeaconManager.bind(this);
+        Log.d(TAG, "starting after");
+    }
+
     /**
      * Constructor.
      */
-    public YoikIBeacon() {
-    }
+    // public YoikIBeacon() {
+    // }
 
     /**
      * Executes the request.
@@ -140,10 +164,10 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer {
     //     }
     // }
 
-    private IBeaconManager iBeaconManager = IBeaconManager.getInstanceForApplication(cordova.getActivity());
+   
 
     private void init(CallbackContext callbackContext) {
-        Log.d("GRANT", "Enabling plugin");
+        Log.d(TAG, "Enabling plugin");
 
         // startNfc();
         // if (!recycledIntent()) {
@@ -152,16 +176,18 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer {
         callbackContext.success();
     }
 
-    // @Override 
-    // public void onDestroy(boolean multitasking) {
-    //     // super.onDestroy(multitasking);
-    //     iBeaconManager.unBind(this);
-    // }
+    @Override 
+    public void onDestroy() {
+        super.onDestroy();
+        iBeaconManager.unBind(this);
+    }
+
     @Override 
     public void onPause(boolean multitasking) {
         super.onPause(multitasking);
         if (iBeaconManager.isBound(this)) iBeaconManager.setBackgroundMode(this, true);
     }
+
     @Override 
     public void onResume(boolean multitasking) {
         super.onResume(multitasking);
@@ -177,39 +203,88 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer {
     }
 
     public boolean bindService(Intent intent, ServiceConnection connection, int mode) {
-        Log.d("GRANT", "HERE!");
+        Log.d(TAG, "HERE!");
         return cordova.getActivity().bindService(intent, connection, mode);
     }
 
     @Override
     public void onIBeaconServiceConnect() {
-        iBeaconManager.setMonitorNotifier(new MonitorNotifier() {
-        @Override
-        public void didEnterRegion(Region region) {
-          // logToDisplay("I just saw an iBeacon for the first time!");       
-            Log.d("GRANT", "I just saw an iBeacon for the first time!");
-        }
+        iBeaconManager.setMonitorNotifier(this);
+        // iBeaconManager.setMonitorNotifier(new MonitorNotifier() {
+        // @Override
+        // public void didEnterRegion(Region region) {
+        //   // logToDisplay("I just saw an iBeacon for the first time!");       
+        //     Log.d(TAG, "I just saw an iBeacon for the first time!");
+        // }
 
-        @Override
-        public void didExitRegion(Region region) {
-            // logToDisplay("I no longer see an iBeacon");
-            Log.d("GRANT", "I no longer see an iBeacon");
-        }
+        // @Override
+        // public void didExitRegion(Region region) {
+        //     // logToDisplay("I no longer see an iBeacon");
+        //     Log.d(TAG, "I no longer see an iBeacon");
+        // }
 
-        @Override
-        public void didDetermineStateForRegion(int state, Region region) {
-            // logToDisplay("I have just switched from seeing/not seeing iBeacons: "+state);
-            Log.d("GRANT", "I have just switched from seeing/not seeing iBeacons: "+state);
-        }
+        // @Override
+        // public void didDetermineStateForRegion(int state, Region region) {
+        //     // logToDisplay("I have just switched from seeing/not seeing iBeacons: "+state);
+        //     Log.d(TAG, "I have just switched from seeing/not seeing iBeacons: "+state);
+        // }
 
 
-        });
+        // });
 
         try {
-            Log.d("GRANT", "START IT!");
+            Log.d(TAG, "START IT!");
             iBeaconManager.startMonitoringBeaconsInRegion(new Region("2F234454-CF6D-4A0F-ADF2-F4911BA9FFA6", null, null, null));
         } catch (RemoteException e) {   }
     }
 
+    @Override
+    public void didEnterRegion(Region region) {
+      // logToDisplay("I just saw an iBeacon for the first time!");       
+        Log.d(TAG, "I just saw an iBeacon for the first time!");
+
+        try {
+            iBeaconManager.startRangingBeaconsInRegion(region);
+            iBeaconManager.setRangeNotifier(this);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void didExitRegion(Region region) {
+        // logToDisplay("I no longer see an iBeacon");
+        Log.d(TAG, "I no longer see an iBeacon");
+    }
+
+    @Override
+    public void didDetermineStateForRegion(int state, Region region) {
+        // logToDisplay("I have just switched from seeing/not seeing iBeacons: "+state);
+        Log.d(TAG, "I have just switched from seeing/not seeing iBeacons: "+state);
+    }
+
+
+    @Override
+    public void didRangeBeaconsInRegion(Collection<IBeacon> iBeacons, Region region) {
+        for (IBeacon iBeacon: iBeacons) {
+            // iBeacon.requestData(this);
+            // String displayString = iBeacon.getProximityUuid()+" "+iBeacon.getMajor()+" "+iBeacon.getMinor()+"\n";
+            // displayTableRow(iBeacon, displayString, false);
+            if (iBeacon.getAccuracy() < 0.015) {       
+                Log.d(TAG, "Found One: "+iBeacon.getAccuracy() + " " + iBeacon.getProximityUuid()+" "+iBeacon.getMajor()+" "+iBeacon.getMinor());             
+            }
+        }
+    }
+
+    @Override
+    public void iBeaconDataUpdate(IBeacon iBeacon, IBeaconData iBeaconData, DataProviderException e) {
+        if (e != null) {
+            Log.d(TAG, "data fetch error:"+e);
+        }
+        if (iBeaconData != null) {
+            String displayString = iBeacon.getProximityUuid()+" "+iBeacon.getMajor()+" "+iBeacon.getMinor()+"\n"+"Welcome message:"+iBeaconData.get("welcomeMessage");
+            //displayTableRow(iBeacon, displayString, true);
+        }
+    }
     
 }
