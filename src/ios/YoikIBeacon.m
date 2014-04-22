@@ -134,7 +134,7 @@ SOFTWARE.
     [result setObject:inner forKey:@"ibeacon"];
     
     
-    NSString *jsStatement = [NSString stringWithFormat:@"cordova.fireDocumentEvent('ibeaconEnter', %@);", [result JSONString]];
+    NSString *jsStatement = [NSString stringWithFormat:@"cordova.fireDocumentEvent('ibeaconenter', %@);", [result JSONString]];
     [self.commandDelegate evalJs:jsStatement];
 }
 
@@ -148,7 +148,7 @@ SOFTWARE.
     NSMutableDictionary *result = [[NSMutableDictionary alloc] init];
     [result setObject:inner forKey:@"ibeacon"];
     
-    NSString *jsStatement = [NSString stringWithFormat:@"cordova.fireDocumentEvent('ibeaconExit', %@);", [result JSONString]];
+    NSString *jsStatement = [NSString stringWithFormat:@"cordova.fireDocumentEvent('ibeaconexit', %@);", [result JSONString]];
     [self.commandDelegate evalJs:jsStatement];
 }
 

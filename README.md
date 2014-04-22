@@ -4,7 +4,7 @@ cordova-yoik-ibeacon
 A very incomplete, not entirely bug free iBeacon plugin.
 
 # Watch a region/UUID
-    cordova.plugins.iBeacon.addRegion(
+    cordova.plugins.ibeacon.addRegion(
         // Success Callback
         function() {
             console.log('added successfully') ;
@@ -37,7 +37,7 @@ Called when in immediate proximity
         }
     }
 
-## ibeaconEnter
+## ibeaconenter
 Called when a region is entered. 
 
     {
@@ -47,7 +47,7 @@ Called when a region is entered.
         }
     }
 
-## ibeaconExit
+## ibeaconexit
 Called when a region is exited.
 
     {

@@ -188,7 +188,7 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, Monit
             JSONObject result = new JSONObject();
             result.put("ibeacon", obj);            
             
-            final String jsStatement = String.format("cordova.fireDocumentEvent('ibeaconEnter', %s);", result.toString());
+            final String jsStatement = String.format("cordova.fireDocumentEvent('ibeaconenter', %s);", result.toString());
 
             cordova.getActivity().runOnUiThread(
                 new Runnable() { 
@@ -220,7 +220,7 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, Monit
             JSONObject result = new JSONObject();
             result.put("ibeacon", obj);            
             
-            final String jsStatement = String.format("cordova.fireDocumentEvent('ibeaconExit', %s);", result.toString());
+            final String jsStatement = String.format("cordova.fireDocumentEvent('ibeaconexit', %s);", result.toString());
 
             cordova.getActivity().runOnUiThread(
                 new Runnable() { 
