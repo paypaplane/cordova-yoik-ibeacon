@@ -43,23 +43,32 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, Monit
 
     private static final String ACTION_ADDREGION = "addRegion";
 
+    private static final int NEAR_FAR_FREQUENCY = 1 * 60 * 1000;
+
     private IBeaconManager iBeaconManager;
 
     private Time lastImmediate;
+    private Time lastFar;
+
+    private Boolean firstImmediate;
+    private Boolean firstNearFar;
 
     private CallbackContext callbackContext;
 
     @Override
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
         super.initialize(cordova, webView);
-        // your init code here
-        Log.d(TAG, "starting");
 
         final Activity activity = cordova.getActivity();
         final YoikIBeacon that = this;
 
         this.lastImmediate = new Time();
         this.lastImmediate.setToNow();
+        this.firstImmediate = true;
+
+        this.lastFar = new Time();
+        this.lastFar.setToNow();
+        this.firstNearFar = true;
 
         cordova.getThreadPool().execute(new Runnable() {
             @Override
@@ -105,8 +114,6 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, Monit
 
     private void addRegion(JSONArray data, CallbackContext callbackContext) {
    
-        Log.d(TAG, "START IT!");
-
         final JSONArray data2 = data;
         final CallbackContext callbackContext2 = callbackContext;
 
@@ -158,15 +165,12 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, Monit
     }
 
     public boolean bindService(Intent intent, ServiceConnection connection, int mode) {
-        Log.d(TAG, "HERE!");
         return cordova.getActivity().bindService(intent, connection, mode);
     }
 
     @Override
     public void onIBeaconServiceConnect() {
         iBeaconManager.setMonitorNotifier(this);        
-        
-        Log.d(TAG, "START IT - OLD!");
     }
 
     @Override
@@ -178,13 +182,11 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, Monit
             iBeaconManager.startRangingBeaconsInRegion(region);
             iBeaconManager.setRangeNotifier(this);
 
-            JSONObject obj = new JSONObject();
-                
+            JSONObject obj = new JSONObject();                
             obj.put("identifier", region.getUniqueId());
             
             JSONObject result = new JSONObject();
-            result.put("ibeacon", obj);
-            
+            result.put("ibeacon", obj);            
             
             final String jsStatement = String.format("cordova.fireDocumentEvent('ibeaconEnter', %s);", result.toString());
 
@@ -212,13 +214,11 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, Monit
         try {
             iBeaconManager.startRangingBeaconsInRegion(region);
 
-            JSONObject obj = new JSONObject();
-                
+            JSONObject obj = new JSONObject();                
             obj.put("identifier", region.getUniqueId());
             
             JSONObject result = new JSONObject();
-            result.put("ibeacon", obj);
-            
+            result.put("ibeacon", obj);            
             
             final String jsStatement = String.format("cordova.fireDocumentEvent('ibeaconExit', %s);", result.toString());
 
@@ -247,45 +247,45 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, Monit
 
     @Override
     public void didRangeBeaconsInRegion(Collection<IBeacon> iBeacons, Region region) {
-        try {
-            for (IBeacon iBeacon: iBeacons) {
-                if (iBeacon.getAccuracy() < 0.015) {       
-                    Log.d(TAG, "Found One: "+iBeacon.getAccuracy() + " " + iBeacon.getProximityUuid()+" "+iBeacon.getMajor()+" "+iBeacon.getMinor());
+   
+        for (IBeacon iBeacon: iBeacons) {
+            Double acc = iBeacon.getAccuracy();
+            Integer proximity = iBeacon.getProximity();
 
-                    Time now = new Time();
-                    now.setToNow();
+            // custom check for immediate proximity, 
+            if (acc < 0.005 && acc > 0.00005) {                
+                Log.d(TAG, "Found One: "+iBeacon.getAccuracy() + " " + iBeacon.getProximityUuid()+" "+iBeacon.getMajor()+" "+iBeacon.getMinor());
 
-                    if ((now.toMillis(false) - this.lastImmediate.toMillis(false)) > 6000) {
+                // the accuracy often gets reported in error the first time so we'll ignore it
+                // until we have a larger sample size.
+                if (this.firstImmediate) {
+                    this.firstImmediate = false;
+                    return;
+                }
 
-                        JSONObject obj = new JSONObject();                
-                        obj.put("uuid", iBeacon.getProximityUuid());
-                        obj.put("major", iBeacon.getMajor());
-                        obj.put("minor", iBeacon.getMinor());
-                        obj.put("range", "immediate");
-                        obj.put("identifier", region.getUniqueId());
+                Time now = new Time();
+                now.setToNow();
 
-                        JSONObject result = new JSONObject();
-                        result.put("ibeacon", obj);
+                if ((now.toMillis(false) - this.lastImmediate.toMillis(false)) > 6000) {
+                    sendIbeaconEvent(iBeacon, region, IBeacon.PROXIMITY_IMMEDIATE);                    
+                    this.lastImmediate.setToNow();
+                }
 
-                        final String jsStatement = String.format("cordova.fireDocumentEvent('ibeacon', %s);", result.toString());
+            } else if (proximity == IBeacon.PROXIMITY_FAR || proximity == IBeacon.PROXIMITY_NEAR) {
 
-                        cordova.getActivity().runOnUiThread(
-                            new Runnable() { 
-                                @Override
-                                 public void run() {
-                                     webView.loadUrl("javascript:" + jsStatement);
-                                 }
-                            }
-                        );
+                Time now = new Time();
+                now.setToNow();
 
-                        this.lastImmediate.setToNow();
-                    }
+                if (this.firstNearFar || (now.toMillis(false) - this.lastFar.toMillis(false)) > NEAR_FAR_FREQUENCY) {
+                    Log.d(TAG, "Found One Near/Far: "+iBeacon.getAccuracy());
 
+                    sendIbeaconEvent(iBeacon, region, proximity);                    
+                    this.lastFar.setToNow();
+                    this.firstNearFar = false;
                 }
             }
-        } catch (JSONException e) {
-            e.printStackTrace();
-        } 
+        }
+        
     }
 
     @Override
@@ -296,6 +296,50 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, Monit
         if (iBeaconData != null) {
             String displayString = iBeacon.getProximityUuid()+" "+iBeacon.getMajor()+" "+iBeacon.getMinor()+"\n"+"Welcome message:"+iBeaconData.get("welcomeMessage");
             
+        }
+    }
+
+    private void sendIbeaconEvent(IBeacon iBeacon, Region region, Integer range)
+    {
+        try {
+            Log.d(TAG, "Firing Event");
+
+            JSONObject obj = new JSONObject();                
+            obj.put("uuid", iBeacon.getProximityUuid());
+            obj.put("major", iBeacon.getMajor());
+            obj.put("minor", iBeacon.getMinor());
+            obj.put("range", proximityText(range));
+            obj.put("identifier", region.getUniqueId());
+
+            JSONObject result = new JSONObject();
+            result.put("ibeacon", obj);
+
+            final String jsStatement = String.format("cordova.fireDocumentEvent('ibeacon', %s);", result.toString());
+
+            cordova.getActivity().runOnUiThread(
+                new Runnable() { 
+                    @Override
+                     public void run() {
+                         webView.loadUrl("javascript:" + jsStatement);
+                     }
+                }
+            );
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private String proximityText(Integer proximity) {
+        switch (proximity) {
+            case IBeacon.PROXIMITY_NEAR:
+                return "near";
+            case IBeacon.PROXIMITY_FAR:
+                return "far";
+            case IBeacon.PROXIMITY_IMMEDIATE:
+                return "immediate";
+            default:
+                return "unknown";
         }
     }
     
