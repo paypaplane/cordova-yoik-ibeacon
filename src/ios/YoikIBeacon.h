@@ -46,6 +46,7 @@ SOFTWARE.
 @property (nonatomic, strong) CLLocationManager* locationManager;
 @property (strong, nonatomic) NSMutableDictionary *beaconDict;
 @property (strong, nonatomic) NSDate *lastImmediate;
+@property (strong, nonatomic) NSDate *lastFar;
 
 @property (strong) YoikIBeaconData* beaconData;
 

@@ -28,13 +28,6 @@ SOFTWARE.
 
 #pragma mark Constants
 
-// #define kPGLocationErrorDomain @"kPGLocationErrorDomain"
-// #define kPGLocationDesiredAccuracyKey @"desiredAccuracy"
-// #define kPGLocationForcePromptKey @"forcePrompt"
-// #define kPGLocationDistanceFilterKey @"distanceFilter"
-// #define kPGLocationFrequencyKey @"frequency"
-
-
 #pragma mark -
 #pragma mark YoikIBeaconData
 
@@ -73,24 +66,11 @@ SOFTWARE.
         self.beaconData = nil;
         
         self.lastImmediate = [[NSDate alloc] init];
+        self.lastFar = [[NSDate alloc] init];
         
         self.beaconDict = [[NSMutableDictionary alloc] init];
     }
     return self;
-}
-
-- (BOOL)hasHeadingSupport
-{
-    BOOL headingInstancePropertyAvailable = [self.locationManager respondsToSelector:@selector(headingAvailable)]; // iOS 3.x
-    BOOL headingClassPropertyAvailable = [CLLocationManager respondsToSelector:@selector(headingAvailable)]; // iOS 4.x
-
-    if (headingInstancePropertyAvailable) { // iOS 3.x
-        return [(id)self.locationManager headingAvailable];
-    } else if (headingClassPropertyAvailable) { // iOS 4.x
-        return [CLLocationManager headingAvailable];
-    } else { // iOS 2.x
-        return NO;
-    }
 }
 
 - (void)addRegion:(CDVInvokedUrlCommand*)command
@@ -98,11 +78,13 @@ SOFTWARE.
     NSString* callbackId = command.callbackId;
     
     @try {
+        
+        
 
         NSArray* arguments = command.arguments;
         NSUUID *uuid = [[NSUUID alloc] initWithUUIDString:[arguments objectAtIndex:1]];
         NSString* identifier = [arguments objectAtIndex:0];
-        
+        NSLog(@"added region.. %@", [arguments objectAtIndex:1]);
        
         CLBeaconRegion *myRegion = [[CLBeaconRegion alloc] initWithProximityUUID:uuid identifier:identifier];
         
@@ -156,52 +138,78 @@ SOFTWARE.
        didRangeBeacons:(NSArray*)beacons
               inRegion:(CLBeaconRegion*)region
 {
-    
     // Beacon found!
     if (beacons.count > 0) {
        
         CLBeacon *foundBeacon = [beacons firstObject];
         
-        if (foundBeacon.proximity == CLProximityUnknown) {
-            //        self.distanceLabel.text = @"Unknown";
-        } else if (foundBeacon.proximity == CLProximityImmediate) {
-            
-           
-            NSTimeInterval secs = [self.lastImmediate timeIntervalSinceNow];
-            
-            if (secs < -6) {
+        switch (foundBeacon.proximity) {
+            case CLProximityImmediate:
+            {
+                NSTimeInterval secs = [self.lastImmediate timeIntervalSinceNow];
                 
-                // You can retrieve the beacon data from its properties
-                NSString *uuid = foundBeacon.proximityUUID.UUIDString;
-                NSString *major = [NSString stringWithFormat:@"%@", foundBeacon.major];
-                NSString *minor = [NSString stringWithFormat:@"%@", foundBeacon.minor];
-                
-                NSMutableDictionary *inner = [[NSMutableDictionary alloc] init];
-                
-                [inner setObject:uuid forKey:@"uuid"];
-                [inner setObject:major forKey:@"major"];
-                [inner setObject:minor forKey:@"minor"];
-                [inner setObject:@"immediate" forKey:@"range"];
-                [inner setObject:region.identifier forKey:@"identifier"];
-                
-                NSMutableDictionary *result = [[NSMutableDictionary alloc] init];
-                [result setObject:inner forKey:@"ibeacon"];
-
-                self.lastImmediate = [[NSDate alloc] init];
-                
-                NSString *jsStatement = [NSString stringWithFormat:@"cordova.fireDocumentEvent('ibeacon', %@);", [result JSONString]];
-                
-                [self.commandDelegate evalJs:jsStatement];
+                if (secs < -6) {
+                    [self sendIbeaconEvent:foundBeacon forRegion:region];
+                    
+                    self.lastImmediate = [[NSDate alloc] init];
+                }
             }
-            
-        } else if (foundBeacon.proximity == CLProximityNear) {
-            //        self.distanceLabel.text = @"Near";
-        } else if (foundBeacon.proximity == CLProximityFar) {
-            //        self.distanceLabel.text = @"Far";
+            case CLProximityNear:
+            case CLProximityFar:
+            {
+                NSTimeInterval secs = [self.lastFar timeIntervalSinceNow];
+                
+                if (secs < -60) {
+                    [self sendIbeaconEvent:foundBeacon forRegion:region];
+                    
+                    self.lastFar = [[NSDate alloc] init];
+                }
+            }
+            default:
+                break;
         }
     }
     
+}
+
+- (void)sendIbeaconEvent:(CLBeacon *)foundBeacon forRegion:(CLRegion *) region
+{
+    NSLog(@"Sending event");
+    // You can retrieve the beacon data from its properties
+    NSString *uuid = foundBeacon.proximityUUID.UUIDString;
+    NSString *major = [NSString stringWithFormat:@"%@", foundBeacon.major];
+    NSString *minor = [NSString stringWithFormat:@"%@", foundBeacon.minor];
     
+    NSMutableDictionary *inner = [[NSMutableDictionary alloc] init];
+    
+    [inner setObject:uuid forKey:@"uuid"];
+    [inner setObject:major forKey:@"major"];
+    [inner setObject:minor forKey:@"minor"];
+    [inner setObject: [self regionText:foundBeacon] forKey:@"range"];
+    [inner setObject:region.identifier forKey:@"identifier"];
+    
+    NSMutableDictionary *result = [[NSMutableDictionary alloc] init];
+    [result setObject:inner forKey:@"ibeacon"];
+    
+    NSLog(@"%@", [result JSONString]);
+    
+    NSString *jsStatement = [NSString stringWithFormat:@"cordova.fireDocumentEvent('ibeacon', %@);", [result JSONString]];
+    
+    [self.commandDelegate evalJs:jsStatement];
+}
+
+- (NSString *)regionText:(CLBeacon *)beacon
+{
+    switch (beacon.proximity) {
+        case CLProximityFar:
+            return @"far";
+        case CLProximityImmediate:
+            return @"immediate";
+        case CLProximityNear:
+            return @"near";
+        default:
+            return @"unknown";
+    }
 }
 
 - (void)locationManager:(CLLocationManager *)manager didStartMonitoringForRegion:(CLRegion *)region
@@ -210,38 +218,36 @@ SOFTWARE.
     [self.locationManager startRangingBeaconsInRegion: self.beaconDict[region.identifier]];
 }
 
-
-/*
-
-- (void)locationManager:(CLLocationManager*)manager didFailWithError:(NSError*)error
+- (void)locationManager: (CLLocationManager *)manager
+       didFailWithError: (NSError *)error
 {
-    NSLog(@"locationManager::didFailWithError %@", [error localizedFailureReason]);
-
-    // Compass Error
-    if ([error code] == kCLErrorHeadingFailure) {
-        CDVHeadingData* hData = self.headingData;
-        if (hData) {
-            if (hData.headingStatus == HEADINGSTARTING) {
-                // heading error during startup - report error
-                for (NSString* callbackId in hData.headingCallbacks) {
-                    CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsInt:0];
-                    [self.commandDelegate sendPluginResult:result callbackId:callbackId];
-                }
-
-                [hData.headingCallbacks removeAllObjects];
-            } // else for frequency watches next call to getCurrentHeading will report error
-            if (hData.headingFilter) {
-                CDVPluginResult* resultFilter = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsInt:0];
-                [self.commandDelegate sendPluginResult:resultFilter callbackId:hData.headingFilter];
-            }
-            hData.headingStatus = HEADINGERROR;
+    [manager stopUpdatingLocation];
+    NSLog(@"error%@",error);
+    switch([error code])
+    {
+        case kCLErrorNetwork: // general, network-related error
+        {
+//            UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Error" message:@"please check your network connection or that you are not in airplane mode" delegate:self cancelButtonTitle:@"Ok" otherButtonTitles:nil, nil];
+//            [alert show];
+//            [alert release];
         }
+            break;
+        case kCLErrorDenied:{
+//            UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Error" message:@"user has denied to use current Location " delegate:self cancelButtonTitle:@"Ok" otherButtonTitles:nil, nil];
+//            [alert show];
+//            [alert release];
+        }
+            break;
+        default:
+        {
+//            UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Error" message:@"unknown network error" delegate:self cancelButtonTitle:@"Ok" otherButtonTitles:nil, nil];
+//            [alert show];
+//            [alert release];
+        }
+            break;
     }
 
-    [self.locationManager stopUpdatingLocation];
-    __locationStarted = NO;
 }
-*/
 
 - (void)dealloc
 {
