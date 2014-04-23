@@ -182,9 +182,9 @@ SOFTWARE.
     
     NSMutableDictionary *inner = [[NSMutableDictionary alloc] init];
     
-    [inner setObject:uuid forKey:@"uuid"];
-    [inner setObject:major forKey:@"major"];
-    [inner setObject:minor forKey:@"minor"];
+    [inner setObject: [uuid lowercaseString] forKey:@"uuid"];
+    [inner setObject: major forKey:@"major"];
+    [inner setObject: minor forKey:@"minor"];
     [inner setObject: [self regionText:foundBeacon] forKey:@"range"];
     [inner setObject:region.identifier forKey:@"identifier"];
     
