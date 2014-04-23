@@ -2,7 +2,7 @@
 <plugin xmlns="http://www.phonegap.com/ns/plugins/1.0"
     xmlns:android="http://schemas.android.com/apk/res/android"
     id="net.yoik.cordova.plugins.ibeacon"
-    version="0.0.1">
+    version="0.0.2">
 
     <name>YoikIBeacon</name>
     <description>Yoik iBeacon Plugin</description>
@@ -10,7 +10,7 @@
 
     <engines>
         <engine name="cordova" version=">=3.0.0" />
-    </engines>    
+    </engines>
 
     <js-module src="www/iBeacon.js" name="iBeacon">
         <clobbers target="cordova.plugins.ibeacon" />
@@ -56,11 +56,11 @@
                 android:isolatedProcess="false"
                 android:label="iBeacon"
                 android:name="com.radiusnetworks.ibeacon.service.IBeaconService">
-            </service>    
-            <service android:enabled="true" 
+            </service>
+            <service android:enabled="true"
                 android:name="com.radiusnetworks.ibeacon.IBeaconIntentProcessor">
                     <meta-data android:name="background" android:value="true" />
-                <intent-filter 
+                <intent-filter
                    android:priority="1" >
                     <action android:name="$PACKAGE_NAME.DID_RANGING" />
                     <action android:name="$PACKAGE_NAME.DID_MONITORING" />
