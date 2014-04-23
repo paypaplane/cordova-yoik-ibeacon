@@ -1,5 +1,27 @@
-package net.yoik.cordova.plugins.ibeacon;
+/*
+The MIT License (MIT)
 
+Copyright (c) 2014
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+ */
+package net.yoik.cordova.plugins.ibeacon;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -39,7 +61,7 @@ import com.radiusnetworks.ibeacon.RangeNotifier;
 public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, MonitorNotifier, RangeNotifier, IBeaconDataNotifier {
     public static final int REQUEST_CODE = 0x0ba7c0de;
 
-    private static final String TAG = "YoikIBeacon";    
+    private static final String TAG = "YoikIBeacon";
 
     private static final String ACTION_ADDREGION = "addRegion";
 
@@ -73,7 +95,7 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, Monit
         cordova.getThreadPool().execute(new Runnable() {
             @Override
             public void run() {
-                
+
                 iBeaconManager = IBeaconManager.getInstanceForApplication(activity);
                 iBeaconManager.bind(that);
             }
@@ -103,9 +125,9 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, Monit
         Log.d(TAG, "execute " + action);
 
         if (action.equals(ACTION_ADDREGION)) {
-            addRegion(data, callbackContext);            
+            addRegion(data, callbackContext);
         } else if (action.equals("anotheraction")) {
-            
+
         } else {
             return false;
         }
@@ -113,7 +135,7 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, Monit
     }
 
     private void addRegion(JSONArray data, CallbackContext callbackContext) {
-   
+
         final JSONArray data2 = data;
         final CallbackContext callbackContext2 = callbackContext;
 
@@ -124,12 +146,12 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, Monit
                     iBeaconManager.startMonitoringBeaconsInRegion(new Region(data2.optString(0), data2.optString(1), null, null));
                     callbackContext2.success();
 
-                } catch (RemoteException e) {   
+                } catch (RemoteException e) {
                     callbackContext2.error("Could not add region");
-                }  
+                }
             }
         });
-            
+
     }
 
     private void init(CallbackContext callbackContext) {
@@ -138,19 +160,19 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, Monit
         callbackContext.success();
     }
 
-    @Override 
+    @Override
     public void onDestroy() {
         super.onDestroy();
         iBeaconManager.unBind(this);
     }
 
-    @Override 
+    @Override
     public void onPause(boolean multitasking) {
         super.onPause(multitasking);
         if (iBeaconManager.isBound(this)) iBeaconManager.setBackgroundMode(this, true);
     }
 
-    @Override 
+    @Override
     public void onResume(boolean multitasking) {
         super.onResume(multitasking);
         if (iBeaconManager.isBound(this)) iBeaconManager.setBackgroundMode(this, false);
@@ -170,28 +192,27 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, Monit
 
     @Override
     public void onIBeaconServiceConnect() {
-        iBeaconManager.setMonitorNotifier(this);        
+        iBeaconManager.setMonitorNotifier(this);
     }
 
     @Override
     public void didEnterRegion(Region region) {
-           
         Log.d(TAG, "I just saw an iBeacon for the first time!");
 
         try {
             iBeaconManager.startRangingBeaconsInRegion(region);
             iBeaconManager.setRangeNotifier(this);
 
-            JSONObject obj = new JSONObject();                
+            JSONObject obj = new JSONObject();
             obj.put("identifier", region.getUniqueId());
-            
+
             JSONObject result = new JSONObject();
-            result.put("ibeacon", obj);            
-            
+            result.put("ibeacon", obj);
+
             final String jsStatement = String.format("cordova.fireDocumentEvent('ibeaconenter', %s);", result.toString());
 
             cordova.getActivity().runOnUiThread(
-                new Runnable() { 
+                new Runnable() {
                     @Override
                      public void run() {
                          webView.loadUrl("javascript:" + jsStatement);
@@ -208,22 +229,21 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, Monit
 
     @Override
     public void didExitRegion(Region region) {
-        
         Log.d(TAG, "I no longer see an iBeacon");
 
         try {
             iBeaconManager.startRangingBeaconsInRegion(region);
 
-            JSONObject obj = new JSONObject();                
+            JSONObject obj = new JSONObject();
             obj.put("identifier", region.getUniqueId());
-            
+
             JSONObject result = new JSONObject();
-            result.put("ibeacon", obj);            
-            
+            result.put("ibeacon", obj);
+
             final String jsStatement = String.format("cordova.fireDocumentEvent('ibeaconexit', %s);", result.toString());
 
             cordova.getActivity().runOnUiThread(
-                new Runnable() { 
+                new Runnable() {
                     @Override
                      public void run() {
                          webView.loadUrl("javascript:" + jsStatement);
@@ -244,17 +264,16 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, Monit
         Log.d(TAG, "I have just switched from seeing/not seeing iBeacons: "+state);
     }
 
-
     @Override
     public void didRangeBeaconsInRegion(Collection<IBeacon> iBeacons, Region region) {
-   
+
         for (IBeacon iBeacon: iBeacons) {
             Double acc = iBeacon.getAccuracy();
             Integer proximity = iBeacon.getProximity();
 
-            // custom check for immediate proximity, 
-            if (acc < 0.005 && acc > 0.00005) {                
-                Log.d(TAG, "Found One: "+iBeacon.getAccuracy() + " " + iBeacon.getProximityUuid()+" "+iBeacon.getMajor()+" "+iBeacon.getMinor());
+            // custom check for immediate proximity,
+            if (acc < 0.005 && acc > 0.00005) {
+                Log.d(TAG, "Found One: " + acc + " " + iBeacon.getProximityUuid() + " " + iBeacon.getMajor() + " " + iBeacon.getMinor());
 
                 // the accuracy often gets reported in error the first time so we'll ignore it
                 // until we have a larger sample size.
@@ -267,7 +286,7 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, Monit
                 now.setToNow();
 
                 if ((now.toMillis(false) - this.lastImmediate.toMillis(false)) > 6000) {
-                    sendIbeaconEvent(iBeacon, region, IBeacon.PROXIMITY_IMMEDIATE);                    
+                    sendIbeaconEvent(iBeacon, region, IBeacon.PROXIMITY_IMMEDIATE);
                     this.lastImmediate.setToNow();
                 }
 
@@ -279,13 +298,13 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, Monit
                 if (this.firstNearFar || (now.toMillis(false) - this.lastFar.toMillis(false)) > NEAR_FAR_FREQUENCY) {
                     Log.d(TAG, "Found One Near/Far: "+iBeacon.getAccuracy());
 
-                    sendIbeaconEvent(iBeacon, region, proximity);                    
+                    sendIbeaconEvent(iBeacon, region, proximity);
                     this.lastFar.setToNow();
                     this.firstNearFar = false;
                 }
             }
         }
-        
+
     }
 
     @Override
@@ -295,7 +314,7 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, Monit
         }
         if (iBeaconData != null) {
             String displayString = iBeacon.getProximityUuid()+" "+iBeacon.getMajor()+" "+iBeacon.getMinor()+"\n"+"Welcome message:"+iBeaconData.get("welcomeMessage");
-            
+
         }
     }
 
@@ -304,7 +323,7 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, Monit
         try {
             Log.d(TAG, "Firing Event");
 
-            JSONObject obj = new JSONObject();                
+            JSONObject obj = new JSONObject();
             obj.put("uuid", iBeacon.getProximityUuid());
             obj.put("major", iBeacon.getMajor());
             obj.put("minor", iBeacon.getMinor());
@@ -317,7 +336,7 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, Monit
             final String jsStatement = String.format("cordova.fireDocumentEvent('ibeacon', %s);", result.toString());
 
             cordova.getActivity().runOnUiThread(
-                new Runnable() { 
+                new Runnable() {
                     @Override
                      public void run() {
                          webView.loadUrl("javascript:" + jsStatement);
@@ -342,5 +361,5 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, Monit
                 return "unknown";
         }
     }
-    
+
 }

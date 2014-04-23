@@ -1,7 +1,7 @@
 /*
 The MIT License (MIT)
 
-Copyright (c) 2014 
+Copyright (c) 2014
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -26,29 +26,13 @@ SOFTWARE.
 #import <Cordova/CDVPlugin.h>
 #import <Cordova/CDVShared.h>
 
-
-// simple object to keep track of beacon info
-@interface YoikIBeaconData : NSObject {}
-
-@property (nonatomic, strong) NSString* uuid;
-@property (assign) NSInteger* major;
-@property (assign) NSInteger* minor;
-@property (nonatomic, strong) NSString* identifier;
-
-@end
-
 @interface YoikIBeacon : CDVPlugin <CLLocationManagerDelegate>{
-    // @private BOOL __locationStarted;
-    // @private BOOL __highAccuracyEnabled;
-    YoikIBeaconData* beaconData;
 }
 
 @property (nonatomic, strong) CLLocationManager* locationManager;
 @property (strong, nonatomic) NSMutableDictionary *beaconDict;
 @property (strong, nonatomic) NSDate *lastImmediate;
 @property (strong, nonatomic) NSDate *lastFar;
-
-@property (strong) YoikIBeaconData* beaconData;
 
 //- (BOOL)hasIBeaconSupport;
 
