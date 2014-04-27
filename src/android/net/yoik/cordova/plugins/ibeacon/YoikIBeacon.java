@@ -66,13 +66,14 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, Monit
     private static final String ACTION_ADDREGION = "addRegion";
 
     private static final int NEAR_FAR_FREQUENCY = 1 * 60 * 1000;
+    private static final int IMMEDIATE_RSSI = -30;
+    private static final int IMMEDIATE_FREQUENCY = 6 * 1000;
 
     private IBeaconManager iBeaconManager;
 
     private Time lastImmediate;
     private Time lastFar;
 
-    private Boolean firstImmediate;
     private Boolean firstNearFar;
 
     private CallbackContext callbackContext;
@@ -86,7 +87,6 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, Monit
 
         this.lastImmediate = new Time();
         this.lastImmediate.setToNow();
-        this.firstImmediate = true;
 
         this.lastFar = new Time();
         this.lastFar.setToNow();
@@ -268,24 +268,17 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, Monit
     public void didRangeBeaconsInRegion(Collection<IBeacon> iBeacons, Region region) {
 
         for (IBeacon iBeacon: iBeacons) {
-            Double acc = iBeacon.getAccuracy();
             Integer proximity = iBeacon.getProximity();
+            Integer rssi = iBeacon.getRssi();
 
             // custom check for immediate proximity,
-            if (acc < 0.005 && acc > 0.00005) {
-                Log.d(TAG, "Found One: " + acc + " " + iBeacon.getProximityUuid() + " " + iBeacon.getMajor() + " " + iBeacon.getMinor());
-
-                // the accuracy often gets reported in error the first time so we'll ignore it
-                // until we have a larger sample size.
-                if (this.firstImmediate) {
-                    this.firstImmediate = false;
-                    return;
-                }
+            if (rssi > IMMEDIATE_RSSI) {
+                Log.d(TAG, "Found One: " + rssi + " " + iBeacon.getProximityUuid() + " " + iBeacon.getMajor() + " " + iBeacon.getMinor());
 
                 Time now = new Time();
                 now.setToNow();
 
-                if ((now.toMillis(false) - this.lastImmediate.toMillis(false)) > 6000) {
+                if ((now.toMillis(false) - this.lastImmediate.toMillis(false)) > IMMEDIATE_FREQUENCY) {
                     sendIbeaconEvent(iBeacon, region, IBeacon.PROXIMITY_IMMEDIATE);
                     this.lastImmediate.setToNow();
                 }
