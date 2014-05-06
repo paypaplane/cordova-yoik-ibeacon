@@ -31,7 +31,7 @@ SOFTWARE.
 
 @property (nonatomic, strong) CLLocationManager* locationManager;
 @property (strong, nonatomic) NSMutableDictionary *beaconDict;
-@property (strong, nonatomic) NSDate *lastImmediate;
+@property (strong, nonatomic) NSDate *lastNigh;
 @property (strong, nonatomic) NSDate *lastFar;
 
 //- (BOOL)hasIBeaconSupport;

@@ -66,12 +66,13 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, Monit
     private static final String ACTION_ADDREGION = "addRegion";
 
     private static final int NEAR_FAR_FREQUENCY = 1 * 60 * 1000;
-    private static final int IMMEDIATE_RSSI = -30;
-    private static final int IMMEDIATE_FREQUENCY = 6 * 1000;
+    private static final int NIGH_RSSI = -30;
+    private static final int NIGH_FREQUENCY = 6 * 1000;
+    private static final int PROXIMITY_NIGH = 100;
 
     private IBeaconManager iBeaconManager;
 
-    private Time lastImmediate;
+    private Time lastNigh;
     private Time lastFar;
 
     private Boolean firstNearFar;
@@ -85,8 +86,8 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, Monit
         final Activity activity = cordova.getActivity();
         final YoikIBeacon that = this;
 
-        this.lastImmediate = new Time();
-        this.lastImmediate.setToNow();
+        this.lastNigh = new Time();
+        this.lastNigh.setToNow();
 
         this.lastFar = new Time();
         this.lastFar.setToNow();
@@ -271,16 +272,16 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, Monit
             Integer proximity = iBeacon.getProximity();
             Integer rssi = iBeacon.getRssi();
 
-            // custom check for immediate proximity,
-            if (rssi > IMMEDIATE_RSSI) {
+            // custom check for nigh proximity,
+            if (rssi > NIGH_RSSI) {
                 Log.d(TAG, "Found One: " + rssi + " " + iBeacon.getProximityUuid() + " " + iBeacon.getMajor() + " " + iBeacon.getMinor());
 
                 Time now = new Time();
                 now.setToNow();
 
-                if ((now.toMillis(false) - this.lastImmediate.toMillis(false)) > IMMEDIATE_FREQUENCY) {
-                    sendIbeaconEvent(iBeacon, region, IBeacon.PROXIMITY_IMMEDIATE);
-                    this.lastImmediate.setToNow();
+                if ((now.toMillis(false) - this.lastNigh.toMillis(false)) > NIGH_FREQUENCY) {
+                    sendIbeaconEvent(iBeacon, region, PROXIMITY_NIGH);
+                    this.lastNigh.setToNow();
                 }
 
             } else if (proximity == IBeacon.PROXIMITY_FAR || proximity == IBeacon.PROXIMITY_NEAR) {
@@ -344,6 +345,8 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, Monit
 
     private String proximityText(Integer proximity) {
         switch (proximity) {
+            case PROXIMITY_NIGH:
+                return "nigh";
             case IBeacon.PROXIMITY_NEAR:
                 return "near";
             case IBeacon.PROXIMITY_FAR:

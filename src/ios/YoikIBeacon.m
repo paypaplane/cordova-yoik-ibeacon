@@ -31,6 +31,8 @@ SOFTWARE.
 
 @implementation YoikIBeacon
 
+static int NIGH_PROXIMITY = -30;
+
 @synthesize locationManager;
 
 - (CDVPlugin*)initWithWebView:(UIWebView*)theWebView
@@ -39,7 +41,7 @@ SOFTWARE.
         self.locationManager = [[CLLocationManager alloc] init];
         self.locationManager.delegate = self; // Tells the location manager to send updates to this object
 
-        self.lastImmediate = [[NSDate alloc] init];
+        self.lastNigh = [[NSDate alloc] init];
         self.lastFar = [[NSDate alloc] init];
 
         self.beaconDict = [[NSMutableDictionary alloc] init];
@@ -112,38 +114,40 @@ SOFTWARE.
 
         CLBeacon *foundBeacon = [beacons firstObject];
 
-        switch (foundBeacon.proximity) {
-            case CLProximityImmediate:
-            {
-                NSTimeInterval secs = [self.lastImmediate timeIntervalSinceNow];
+        if (foundBeacon.rssi >= NIGH_PROXIMITY) {
+            NSLog(@"%ld - %ld", (long)foundBeacon.rssi, (long)foundBeacon.major);
 
-                if (secs < -6) {
-                    [self sendIbeaconEvent:foundBeacon forRegion:region];
+            NSTimeInterval secs = [self.lastNigh timeIntervalSinceNow];
 
-                    self.lastImmediate = [[NSDate alloc] init];
-                }
+            if (secs < -6) {
+                [self sendIbeaconEvent:foundBeacon forRegion:region forRange:@"nigh"];
+
+                self.lastNigh = [[NSDate alloc] init];
             }
-                break;
-            case CLProximityNear:
-            case CLProximityFar:
-            {
-                NSTimeInterval secs = [self.lastFar timeIntervalSinceNow];
 
-                if (secs < -60) {
-                    [self sendIbeaconEvent:foundBeacon forRegion:region];
+        } else {
+            switch (foundBeacon.proximity) {
+                case CLProximityNear:
+                case CLProximityFar:
+                {
+                    NSTimeInterval secs = [self.lastFar timeIntervalSinceNow];
 
-                    self.lastFar = [[NSDate alloc] init];
+                    if (secs < -60) {
+                        [self sendIbeaconEvent:foundBeacon forRegion:region forRange:[self regionText:foundBeacon]];
+
+                        self.lastFar = [[NSDate alloc] init];
+                    }
                 }
+                    break;
+                default:
+                    break;
             }
-                break;
-            default:
-                break;
         }
     }
 
 }
 
-- (void)sendIbeaconEvent:(CLBeacon *)foundBeacon forRegion:(CLRegion *) region
+- (void)sendIbeaconEvent:(CLBeacon *)foundBeacon forRegion:(CLRegion *) region forRange:(NSString *) range
 {
     NSLog(@"Sending event");
     // You can retrieve the beacon data from its properties
@@ -156,7 +160,7 @@ SOFTWARE.
     [inner setObject: [uuid lowercaseString] forKey:@"uuid"];
     [inner setObject: major forKey:@"major"];
     [inner setObject: minor forKey:@"minor"];
-    [inner setObject: [self regionText:foundBeacon] forKey:@"range"];
+    [inner setObject: range forKey:@"range"];
     [inner setObject:region.identifier forKey:@"identifier"];
 
     NSMutableDictionary *result = [[NSMutableDictionary alloc] init];
