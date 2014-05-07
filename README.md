@@ -1,7 +1,9 @@
 cordova-yoik-ibeacon
 ===============
 
-A very incomplete, not entirely bug free iBeacon plugin.
+A very incomplete, iBeacon plugin.
+
+Immediate proximity has proven to be flakey on both ios and android, so have added a new custom proximity "nigh" which is based purely on the rssi being greater than -30.  This implementation meets our current requirement however further testing is required against multiple devices/beacon types and with phone cases.  Unfortunately it's an unknown at this stage. This can not currently be configured on the JS side but support will be added in future to control/setup notifications via javascript.
 
 # Watch a region/UUID
     cordova.plugins.ibeacon.addRegion(
@@ -24,7 +26,10 @@ A very incomplete, not entirely bug free iBeacon plugin.
 All events are called on the document object.
 
 ## ibeacon
-Called when in immediate proximity
+Called when in beacon proximity
+
+near & far once per minute,
+nigh once per 6 seconds
 
     {
         // event data
