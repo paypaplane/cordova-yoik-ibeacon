@@ -114,7 +114,7 @@ static int NIGH_PROXIMITY = -30;
 
         CLBeacon *foundBeacon = [beacons firstObject];
 
-        if (foundBeacon.rssi >= NIGH_PROXIMITY) {
+        if (foundBeacon.rssi >= NIGH_PROXIMITY && foundBeacon.rssi < 0) {
             NSLog(@"%ld - %ld", (long)foundBeacon.rssi, (long)foundBeacon.major);
 
             NSTimeInterval secs = [self.lastNigh timeIntervalSinceNow];

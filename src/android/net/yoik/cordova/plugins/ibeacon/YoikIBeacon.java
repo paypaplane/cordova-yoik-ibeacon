@@ -273,7 +273,7 @@ public class YoikIBeacon extends CordovaPlugin implements IBeaconConsumer, Monit
             Integer rssi = iBeacon.getRssi();
 
             // custom check for nigh proximity,
-            if (rssi > NIGH_RSSI) {
+            if (rssi > NIGH_RSSI && rssi < 0) {
                 Log.d(TAG, "Found One: " + rssi + " " + iBeacon.getProximityUuid() + " " + iBeacon.getMajor() + " " + iBeacon.getMinor());
 
                 Time now = new Time();
